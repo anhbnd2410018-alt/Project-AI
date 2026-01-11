@@ -1,70 +1,42 @@
 import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
+import base64
+import os
 
 # --- 1. CẤU HÌNH TRANG WEB ---
-# Tôi đã bỏ layout="wide" để banner tự động căn vừa đẹp hơn
 st.set_page_config(
     page_title="Ngon Luôn - AI Food Detector",
     page_icon="🍲"
 )
 
-# --- 2. CSS TÙY CHỈNH (Tạo Banner đẹp tràn viền) ---
+# --- 2. HÀM XỬ LÝ ẢNH BANNER ---
+def get_base64_of_bin_file(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+# --- 3. CSS TÙY CHỈNH ---
 st.markdown("""
     <style>
-    /* Container chính của banner - Tràn viền 100% */
     .banner-container {
-        position: relative;
         width: 100%;
-        overflow: hidden;
-        border-radius: 15px;
-        margin-bottom: 30px;
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        margin-bottom: 20px;
     }
-    
-    /* Ảnh nền banner - Phóng to để bao phủ toàn bộ */
     .banner-img {
         width: 100%;
-        height: 400px; /* Tăng chiều cao lên 400px cho hoành tráng */
-        object-fit: cover; /* Quan trọng: Cắt ảnh để vừa khít khung */
+        height: auto;
+        border-radius: 15px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         display: block;
     }
-    
-    /* Lớp phủ đen mờ */
-    .banner-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        /* Màu đen mờ dần từ trên xuống dưới */
-        background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7));
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        color: white;
-        padding: 20px;
-    }
-    
-    .banner-title {
-        font-size: 3.5rem;
-        font-weight: 800;
-        margin-bottom: 10px;
-        text-shadow: 2px 2px 6px rgba(0,0,0,0.6);
-    }
-    
-    .banner-subtitle {
-        font-size: 1.3rem;
-        font-weight: 300;
-        font-style: italic;
-        opacity: 0.9;
+    .block-container {
+        padding-top: 2rem;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR (THANH BÊN TRÁI) ---
+# --- 4. SIDEBAR ---
 with st.sidebar:
     st.title("🏠 Home") 
     st.markdown("---")
@@ -75,22 +47,23 @@ with st.sidebar:
     conf_threshold = st.slider("Độ tin cậy (Confidence)", 0.0, 1.0, 0.25)
     st.caption("Điều chỉnh độ nhạy của AI.")
 
-# --- 4. GIAO DIỆN CHÍNH (BANNER TRÀN VIỀN) ---
+# --- 5. GIAO DIỆN CHÍNH ---
 
-# Banner hiển thị ngay đầu trang
-st.markdown("""
-    <div class="banner-container">
-        <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2070&auto=format&fit=crop" class="banner-img">
-        <div class="banner-overlay">
-            <h1 class="banner-title">Welcome to Group 😋</h1>
-            <p class="banner-subtitle">An easy way to detect Vietnamese dishes!</p>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+# === ĐÃ ĐỔI TÊN FILE TẠI ĐÂY ===
+banner_file = 'welcome.png' 
 
-st.write("") # Khoảng trống
+if os.path.exists(banner_file):
+    bin_str = get_base64_of_bin_file(banner_file)
+    st.markdown(
+        f'<div class="banner-container"><img src="data:image/png;base64,{bin_str}" class="banner-img"></div>',
+        unsafe_allow_html=True
+    )
+else:
+    st.error(f"⚠️ Chưa tìm thấy file '{banner_file}'. Hãy copy ảnh vào cùng thư mục với file app.py nhé!")
 
-# --- 5. LOGIC AI ---
+st.write("") 
+
+# --- 6. LOGIC AI ---
 model_path = 'model/best.pt'
 try:
     model = YOLO(model_path)
@@ -104,7 +77,7 @@ if uploaded_file is not None:
     
     with col1:
         st.write("### 📸 Ảnh gốc")
-        st.image(image, use_column_width=True)
+        st.image(image, use_container_width=True)
         analyze_button = st.button('🚀 Phân tích ngay', type="primary", use_container_width=True)
 
     if analyze_button:
@@ -113,7 +86,7 @@ if uploaded_file is not None:
             with st.spinner('Đang soi món ăn...'):
                 results = model(image, conf=conf_threshold)
                 res_plotted = results[0].plot()
-                st.image(res_plotted, use_column_width=True)
+                st.image(res_plotted, use_container_width=True)
                 
                 detected_items = []
                 for box in results[0].boxes:
