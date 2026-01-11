@@ -1,50 +1,31 @@
 import streamlit as st
-import numpy as np
-from PIL import Image
 from ultralytics import YOLO
+from PIL import Image
+import numpy as np
 
-# ================== CONFIG ==================
-st.set_page_config(
-    page_title="YOLOv10b Food Detection",
-    layout="centered"
-)
+st.set_page_config(page_title="YOLOv10 Food Detector", layout="centered")
+
+st.title("🍔 Food Detection - YOLOv10b")
 
 @st.cache_resource
 def load_model():
-    return YOLO("model/best.pt")  # weight của bạn
+    return YOLO("model/best.pt")
 
 model = load_model()
 
-# ================== UI ==================
-st.title("🍔 Food Detection - YOLOv10b")
-st.write("Upload ảnh để YOLOv10b nhận diện")
-
 uploaded_file = st.file_uploader(
-    "Chọn ảnh",
-    type=["jpg", "png", "jpeg"]
+    "Upload an image",
+    type=["jpg", "jpeg", "png"]
 )
 
-if uploaded_file:
+if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Ảnh gốc", use_container_width=True)
+    img_array = np.array(image)
 
-    if st.button("🔍 Detect"):
-        with st.spinner("YOLOv10b đang chạy..."):
-            img_np = np.array(image)
+    st.image(image, caption="Uploaded Image", use_container_width=True)
 
-            results = model(
-                img_np,
-                conf=0.25,
-                imgsz=640,
-                device="cpu"   # đổi thành 0 nếu có GPU
-            )[0]
+    with st.spinner("Detecting..."):
+        results = model(img_array)
 
-            annotated_img = results.plot()
-
-            st.image(
-                annotated_img,
-                caption="Kết quả YOLOv10b",
-                use_container_width=True
-            )
-
-            st.success("Hoàn tất 🎉")
+    result_img = results[0].plot()
+    st.image(result_img, caption="Detection Result", use_container_width=True)
