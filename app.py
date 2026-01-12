@@ -3,7 +3,6 @@ from ultralytics import YOLO
 from PIL import Image
 import base64
 import os
-import cv2
 import tempfile
 
 # --- 1. CẤU HÌNH TRANG WEB ---
